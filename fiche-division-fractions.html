@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fiche — Division des fractions</title>
+<style>
+  :root { --ink:#1c2b4a; --grid:#dfe7f3; --border:#b9c8e0; --muted:#5a6c8f; --soft:#43547a;
+          --pos:#0d9488; --posbg:#e8f7f3; --neg:#e11d48; --negbg:#fdeef1; --shadow:#c9d6ea; }
+  * { box-sizing:border-box; }
+  body { margin:0; color:var(--ink); font-family:Georgia,'Times New Roman',serif; background:#f6f8fc;
+    background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);
+    background-size:26px 26px; }
+  .page { max-width:760px; margin:0 auto; padding:32px 16px; }
+  .mono { font-family:ui-monospace,'Courier New',monospace; }
+  .pos { color:var(--pos); font-weight:700; } .neg { color:var(--neg); font-weight:700; }
+  @keyframes riseIn { from { opacity:0; transform:translateY(14px);} to { opacity:1; transform:none;} }
+  @keyframes popIn { 0% { transform:scale(.6); opacity:0;} 70% { transform:scale(1.08);} 100% { transform:scale(1); opacity:1;} }
+  @keyframes softPulse { 0%,100% { transform:scale(1);} 50% { transform:scale(1.05);} }
+  .rise { animation:riseIn .55s cubic-bezier(.4,0,.2,1) both; }
+  @media (prefers-reduced-motion:reduce){ .rise,.corr-item,.mark.show,.score-circle,.entete-visuel{animation:none !important; opacity:1 !important;} }
+
+  header.carte { background:#fff; border:2px solid var(--ink); border-radius:12px; box-shadow:6px 6px 0 var(--shadow); padding:24px; margin-bottom:28px; }
+  .eyebrow { font-family:ui-monospace,monospace; font-size:11px; letter-spacing:.2em; text-transform:uppercase; color:var(--muted); margin:0 0 4px; }
+  h1 { font-size:clamp(24px,4.5vw,34px); margin:0 0 14px; }
+  .entete-visuel { display:inline-flex; align-items:center; gap:10px; font-size:26px; background:#f6f8fc; border:1.5px solid var(--border);
+    border-radius:10px; padding:10px 20px; animation:softPulse 4s ease-in-out infinite; }
+  .consigne { font-size:14px; color:var(--soft); margin:14px 0 0; }
+
+  section.exos { background:#fff; border:1.5px solid var(--border); border-radius:12px; padding:20px; margin-bottom:24px; }
+  .badge { background:var(--ink); color:#fff; font-family:ui-monospace,monospace; font-size:13px; padding:2px 8px; border-radius:5px; }
+  h2 { display:inline; font-size:20px; margin-left:10px; }
+  .regle { font-size:14px; font-style:italic; color:var(--muted); margin:10px 0 16px; }
+  .grille { display:grid; gap:12px; grid-template-columns:1fr 1fr; }
+  @media (max-width:640px){ .grille { grid-template-columns:1fr; } }
+  .calc { display:flex; align-items:center; gap:10px; background:#f6f8fc; border:1.5px solid #d4deee; border-radius:9px; padding:10px 12px; transition:background .3s,border-color .3s; }
+  .calc.ok { background:var(--posbg); border-color:var(--pos); }
+  .calc.ko { background:var(--negbg); border-color:var(--neg); }
+  .num { font-family:ui-monospace,monospace; font-size:12px; color:var(--muted); width:22px; text-align:right; }
+  .expr { flex:1; display:flex; align-items:center; gap:6px; font-size:16px; }
+  .champ { width:74px; text-align:center; padding:6px; border:1.5px solid var(--border); border-radius:6px; font-family:ui-monospace,monospace; font-size:15px; color:var(--ink); background:#fff; }
+  .champ:focus { outline:2px solid var(--ink); outline-offset:2px; }
+  .mark { font-size:18px; width:20px; text-align:center; }
+  .mark.show { animation:popIn .5s cubic-bezier(.34,1.56,.64,1) both; }
+
+  .frac { display:inline-flex; flex-direction:column; text-align:center; vertical-align:middle; line-height:1.05; padding:0 1px; }
+  .frac .n { border-bottom:1.7px solid currentColor; padding:0 4px 1px; }
+  .frac .d { padding:1px 4px 0; }
+  .op { font-family:ui-monospace,monospace; color:var(--muted); }
+
+  .actions { text-align:center; margin:32px 0; }
+  button.principal { background:var(--ink); color:#fff; font-family:Georgia,serif; font-weight:700; font-size:17px; padding:12px 32px; border:2px solid var(--ink); border-radius:12px; box-shadow:5px 5px 0 var(--shadow); cursor:pointer; }
+  button.principal:focus-visible, button.secondaire:focus-visible { outline:3px solid var(--pos); outline-offset:2px; }
+  .compteur { font-size:14px; color:var(--muted); margin-top:8px; }
+
+  section.correction { display:none; background:#fff; border:2px solid var(--ink); border-radius:12px; box-shadow:6px 6px 0 var(--shadow); padding:24px; margin-bottom:40px; }
+  section.correction.visible { display:block; animation:riseIn .55s cubic-bezier(.4,0,.2,1) both; }
+  .bilan { display:flex; flex-wrap:wrap; align-items:center; gap:20px; margin-bottom:20px; }
+  .score-circle { width:118px; height:118px; border:4px solid var(--ink); border-radius:50%; display:flex; align-items:center; justify-content:center; background:#f6f8fc; animation:popIn .5s cubic-bezier(.34,1.56,.64,1) both; }
+  .score-circle.parfait { background:var(--posbg); }
+  .score-num { font-family:ui-monospace,monospace; font-size:28px; font-weight:700; }
+  .score-num small { font-size:15px; color:var(--muted); font-weight:400; }
+  .appreciation { color:var(--soft); margin:4px 0 0; }
+  h3.corr-section { font-size:17px; border-bottom:1.5px solid #d4deee; padding-bottom:4px; margin:18px 0 10px; }
+  .corr-item { border-radius:9px; padding:12px 14px; margin-bottom:10px; opacity:0; animation:riseIn .55s cubic-bezier(.4,0,.2,1) both; }
+  .corr-item.ok { background:var(--posbg); border-left:4px solid var(--pos); }
+  .corr-item.ko { background:var(--negbg); border-left:4px solid var(--neg); }
+  .corr-line { font-size:16px; margin:0; display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
+  .given { font-size:13px; margin-left:4px; font-family:ui-monospace,monospace; }
+  .given.faux { color:var(--neg); } .given.vide { color:var(--muted); }
+  .steps { margin:6px 0 0 18px; padding:0; font-size:14px; color:var(--soft); font-family:Georgia,serif; }
+  .steps li { margin-bottom:2px; }
+  button.secondaire { background:#fff; color:var(--ink); font-family:Georgia,serif; font-weight:700; font-size:15px; padding:9px 24px; border:2px solid var(--ink); border-radius:9px; cursor:pointer; }
+  footer { text-align:center; font-family:ui-monospace,monospace; font-size:12px; color:#8494b3; padding-bottom:24px; }
+</style>
+</head>
+<body>
+<div class="page">
+  <header class="carte rise">
+    <p class="eyebrow">Fiche d'exercices · Mathématiques · Fractions</p>
+    <h1>La <span class="neg">division</span> des <span class="pos">fractions</span></h1>
+    <div class="entete-visuel" aria-hidden="true"><span class="frac "><span class="n">1</span><span class="d">2</span></span><span class="op">÷</span><span class="frac "><span class="n">1</span><span class="d">4</span></span><span class="op">=</span><span class="pos" style="font-family:ui-monospace,monospace">2</span></div>
+    <p class="consigne">Écris chaque résultat sous forme de fraction (ex. <span class="mono">3/4</span>) ou d'entier. Toute fraction égale au résultat est acceptée. Clique ensuite sur « Vérifier » pour la correction détaillée.</p>
+  </header>
+
+  <div id="sections"></div>
+
+  <div class="actions rise" style="animation-delay:.4s">
+    <button class="principal" id="btn-verifier">Vérifier mes réponses</button>
+    <p class="compteur"><span id="nb-rempli">0</span> / <span id="nb-total">0</span> réponses remplies</p>
+  </div>
+
+  <section class="correction" id="correction">
+    <div class="bilan">
+      <div class="score-circle" id="score-circle"><span class="score-num" id="score-num"></span></div>
+      <div>
+        <h2 style="display:block;margin:0 0 4px;font-size:24px;">Correction</h2>
+        <p class="appreciation" id="appreciation"></p>
+      </div>
+    </div>
+    <div id="corrections"></div>
+    <div style="text-align:center;margin-top:20px;">
+      <button class="secondaire" id="btn-recommencer">Recommencer la fiche</button>
+    </div>
+  </section>
+
+  <footer>Règle d'or : diviser par une fraction, c'est multiplier par son inverse.</footer>
+</div>
+
+<script>
+(function () {
+  var OP = "÷";
+  var SECTIONS = [{"titre":"Diviser par une fraction","regle":"Diviser par une fraction, c'est multiplier par son inverse (on échange numérateur et dénominateur de la seconde fraction).","items":[{"f1":[1,2],"f2":[1,4],"a":[2,1],"steps":["On multiplie par l'inverse : 1/2 × 4/1","1 × 4 = 4 et 2 × 1 = 2, soit 4/2","Résultat : 2"]},{"f1":[2,3],"f2":[4,9],"a":[3,2],"steps":["1/2 × inverse : 2/3 × 9/4","2 × 9 = 18 et 3 × 4 = 12, soit 18/12","On simplifie par 6 → 3/2"]},{"f1":[3,5],"f2":[2,5],"a":[3,2],"steps":["3/5 × 5/2","3 × 5 = 15 et 5 × 2 = 10, soit 15/10","On simplifie par 5 → 3/2"]},{"f1":[4,7],"f2":[2,7],"a":[2,1],"steps":["4/7 × 7/2","4 × 7 = 28 et 7 × 2 = 14, soit 28/14","Résultat : 2"]}]},{"titre":"Résultats à simplifier","regle":"Après avoir multiplié par l'inverse, on simplifie toujours le résultat au maximum.","items":[{"f1":[3,4],"f2":[9,8],"a":[2,3],"steps":["3/4 × 8/9","3 × 8 = 24 et 4 × 9 = 36, soit 24/36","On simplifie → 2/3"]},{"f1":[5,6],"f2":[10,3],"a":[1,4],"steps":["5/6 × 3/10","5 × 3 = 15 et 6 × 10 = 60, soit 15/60","On simplifie → 1/4"]},{"f1":[2,9],"f2":[4,3],"a":[1,6],"steps":["2/9 × 3/4","2 × 3 = 6 et 9 × 4 = 36, soit 6/36","On simplifie → 1/6"]},{"f1":[6,7],"f2":[3,14],"a":[4,1],"steps":["6/7 × 14/3","6 × 14 = 84 et 7 × 3 = 21, soit 84/21","Résultat : 4"]}]},{"titre":"Avec un entier","regle":"Un entier s'écrit sur 1. Diviser par un entier revient à multiplier par 1 sur cet entier.","items":[{"f1":[3,4],"f2":[2,1],"a":[3,8],"steps":["3/4 ÷ 2 = 3/4 × 1/2","3 × 1 = 3 et 4 × 2 = 8","Résultat : 3/8"]},{"f1":[5,1],"f2":[1,2],"a":[10,1],"steps":["5 ÷ 1/2 = 5 × 2/1","Résultat : 10"]},{"f1":[2,3],"f2":[4,1],"a":[1,6],"steps":["2/3 ÷ 4 = 2/3 × 1/4","2 × 1 = 2 et 3 × 4 = 12, soit 2/12","On simplifie → 1/6"]},{"f1":[6,1],"f2":[3,5],"a":[10,1],"steps":["6 ÷ 3/5 = 6 × 5/3","6 × 5 = 30 et 1 × 3 = 3, soit 30/3","Résultat : 10"]}]}];
+
+  var TOTAL_Q = 0;
+  SECTIONS.forEach(function (s) { TOTAL_Q += s.items.length; });
+
+  function gcd(a, b) { a = Math.abs(a); b = Math.abs(b); while (b) { var t = b; b = a % b; a = t; } return a || 1; }
+  function reduce(n, d) { var g = gcd(n, d); return [n / g, d / g]; }
+
+  function frac(fr, cls) {
+    cls = cls || "";
+    if (fr[1] === 1) return '<span class="' + cls + '" style="font-family:ui-monospace,monospace">' + fr[0] + "</span>";
+    return '<span class="frac ' + cls + '"><span class="n">' + fr[0] + '</span><span class="d">' + fr[1] + "</span></span>";
+  }
+
+  var host = document.getElementById("sections");
+  var corrHost = document.getElementById("corrections");
+  var flat = [];
+  SECTIONS.forEach(function (s, si) {
+    var sec = document.createElement("section");
+    sec.className = "exos rise";
+    sec.style.animationDelay = (0.12 + si * 0.09) + "s";
+    var rows = "";
+    s.items.forEach(function (it) {
+      var i = flat.length;
+      flat.push(it);
+      rows += '<label class="calc" id="row-' + i + '">' +
+        '<span class="num">' + (i + 1) + '.</span>' +
+        '<span class="expr">' + frac(it.f1) + '<span class="op">' + OP + '</span>' + frac(it.f2) + '<span class="op">=</span></span>' +
+        '<input class="champ" data-i="' + i + '" placeholder="a/b" inputmode="text" aria-label="Résultat numéro ' + (i + 1) + '" />' +
+        '<span class="mark" aria-hidden="true"></span></label>';
+    });
+    sec.innerHTML = '<div><span class="badge">Exercice ' + (si + 1) + '</span><h2>' + s.titre + '</h2></div>' +
+      '<p class="regle">Rappel — ' + s.regle + '</p>' +
+      '<div class="grille">' + rows + "</div>";
+    host.appendChild(sec);
+  });
+
+  var idx = 0;
+  SECTIONS.forEach(function (s, si) {
+    var h = document.createElement("h3");
+    h.className = "corr-section";
+    h.textContent = "Exercice " + (si + 1) + " — " + s.titre;
+    corrHost.appendChild(h);
+    s.items.forEach(function (it) {
+      var r = reduce(it.a[0], it.a[1]);
+      var d = document.createElement("div");
+      d.className = "corr-item";
+      d.id = "corr-" + idx;
+      d.style.animationDelay = (0.15 + idx * 0.08).toFixed(2) + "s";
+      var stepsHtml = it.steps.map(function (st) { return "<li>" + st + "</li>"; }).join("");
+      d.innerHTML = '<p class="corr-line">' + frac(it.f1) + '<span class="op">' + OP + '</span>' + frac(it.f2) +
+        '<span class="op">=</span>' + frac(r, "pos") +
+        '<span class="given" id="given-' + idx + '"></span></p>' +
+        '<ol class="steps">' + stepsHtml + "</ol>";
+      corrHost.appendChild(d);
+      idx++;
+    });
+  });
+
+  document.getElementById("nb-total").textContent = TOTAL_Q;
+  var champs = Array.prototype.slice.call(document.querySelectorAll(".champ"));
+  var correction = document.getElementById("correction");
+
+  function parseFrac(raw) {
+    if (raw == null) return null;
+    var t = String(raw).trim().replace(/\s+/g, "").replace(/\u2212/g, "-").replace(/,/g, ".");
+    if (t === "") return null;
+    if (t.indexOf("/") !== -1) {
+      var p = t.split("/");
+      if (p.length !== 2) return null;
+      var n = Number(p[0]), d = Number(p[1]);
+      if (!isFinite(n) || !isFinite(d) || d === 0) return null;
+      return [n, d];
+    }
+    var v = Number(t);
+    if (!isFinite(v)) return null;
+    return [v, 1];
+  }
+  function equal(u, target) { return u[0] * target[1] === target[0] * u[1]; }
+
+  function majCompteur() {
+    var n = champs.filter(function (c) { return parseFrac(c.value) !== null; }).length;
+    document.getElementById("nb-rempli").textContent = n;
+  }
+
+  champs.forEach(function (c) {
+    c.addEventListener("input", function () {
+      majCompteur();
+      var row = document.getElementById("row-" + c.dataset.i);
+      row.classList.remove("ok", "ko");
+      row.querySelector(".mark").textContent = "";
+      correction.classList.remove("visible");
+    });
+    c.addEventListener("keydown", function (e) { if (e.key === "Enter") verifier(); });
+  });
+
+  function verifier() {
+    var score = 0;
+    champs.forEach(function (c) {
+      var i = Number(c.dataset.i);
+      var it = flat[i];
+      var u = parseFrac(c.value);
+      var ok = u !== null && equal(u, it.a);
+      if (ok) score++;
+      var row = document.getElementById("row-" + i);
+      row.classList.remove("ok", "ko");
+      row.classList.add(ok ? "ok" : "ko");
+      var mark = row.querySelector(".mark");
+      mark.textContent = ok ? "\u2714" : "\u2718";
+      mark.classList.remove("show"); void mark.offsetWidth; mark.classList.add("show");
+      var item = document.getElementById("corr-" + i);
+      item.classList.remove("ok", "ko");
+      item.classList.add(ok ? "ok" : "ko");
+      var given = document.getElementById("given-" + i);
+      if (ok) { given.textContent = ""; given.className = "given"; }
+      else if (u !== null) { given.textContent = "(ta réponse : " + c.value.trim() + ")"; given.className = "given faux"; }
+      else { given.textContent = "(non répondu)"; given.className = "given vide"; }
+    });
+
+    document.getElementById("score-num").innerHTML = score + "<small>/" + TOTAL_Q + "</small>";
+    document.getElementById("score-circle").classList.toggle("parfait", score === TOTAL_Q);
+    var msg = score === TOTAL_Q ? "Sans faute, bravo !" :
+              score >= TOTAL_Q * 0.8 ? "Très bon travail !" :
+              score >= TOTAL_Q * 0.5 ? "C'est encourageant, relis les corrections." :
+              "Relis la règle en italique, puis réessaie.";
+    document.getElementById("appreciation").textContent = msg;
+
+    correction.classList.remove("visible"); void correction.offsetWidth;
+    correction.classList.add("visible");
+    setTimeout(function () { correction.scrollIntoView({ behavior: "smooth", block: "start" }); }, 80);
+  }
+
+  document.getElementById("btn-verifier").addEventListener("click", verifier);
+  document.getElementById("btn-recommencer").addEventListener("click", function () {
+    champs.forEach(function (c) {
+      c.value = "";
+      var row = document.getElementById("row-" + c.dataset.i);
+      row.classList.remove("ok", "ko");
+      row.querySelector(".mark").textContent = "";
+    });
+    correction.classList.remove("visible");
+    majCompteur();
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  });
+
+  majCompteur();
+})();
+</script>
+</body>
+</html>
